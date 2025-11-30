@@ -243,6 +243,59 @@ export const exportPersonData = async (req: Request, res: Response): Promise<voi
   }
 };
 
+// Get all salary records with pagination
+export const getAllSalaryRecords = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+    const skip = (page - 1) * limit;
+    const search = req.query.search as string;
+
+    const query: Record<string, unknown> = {};
+    if (search) {
+      query.$or = [
+        { pan: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { accountNumber: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const [records, total, totals] = await Promise.all([
+      SalaryRecord.find(query)
+        .sort({ uploadedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .select('pan name position department accountNumber dutyDays rate grossAmount taxDeduction netSalary uploadedAt source'),
+      SalaryRecord.countDocuments(query),
+      SalaryRecord.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: null,
+            totalGross: { $sum: { $ifNull: ['$grossAmount', 0] } },
+            totalNet: { $sum: { $ifNull: ['$netSalary', 0] } },
+            totalTax: { $sum: { $ifNull: ['$taxDeduction', 0] } }
+          }
+        }
+      ])
+    ]);
+
+    res.json({
+      records,
+      totals: totals[0] || { totalGross: 0, totalNet: 0, totalTax: 0 },
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get all salary records error:', error);
+    res.status(500).json({ error: 'Failed to fetch salary records' });
+  }
+};
+
 // Get all persons with pagination
 export const getAllPersons = async (req: Request, res: Response): Promise<void> => {
   try {
