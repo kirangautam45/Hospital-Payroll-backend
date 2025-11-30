@@ -17,7 +17,7 @@ on:
           - production
 
 env:
-  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hospital-api
+  DOCKER_IMAGE: kirangautam/hospital-api
   NODE_VERSION: '20'
 
 jobs:
@@ -27,6 +27,7 @@ jobs:
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
+
 
     outputs:
       image_tag: ${{ steps.meta.outputs.tags }}
