@@ -15,7 +15,8 @@ import pharmacyRoutes from './routes/pharmacy';
 dotenv.config();
 
 // Load Swagger document
-const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+// Use process.cwd() to get the project root, works in both dev and production
+const swaggerDocument = YAML.load(path.join(process.cwd(), 'swagger.yaml'));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
