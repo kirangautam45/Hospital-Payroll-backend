@@ -1,0 +1,1529 @@
+openapi: 3.0.3
+info:
+  title: Hospital Backend API
+  description: |
+    Hospital Management System API for managing employee salary records, pharmacy data, and analytics.
+
+    ## Features
+    - JWT-based authentication with refresh token rotation
+    - Excel/CSV file upload with Nepali language support
+    - Employee salary record management
+    - Pharmacy record management
+    - Analytics and reporting with export capabilities
+
+    ## Authentication
+    Most endpoints require a valid JWT access token in the Authorization header.
+    Access tokens expire after 15 minutes. Use the refresh token endpoint to obtain new tokens.
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User authentication and token management
+  - name: Upload
+    description: File upload for salary data
+  - name: Person
+    description: Person and salary record management
+  - name: Pharmacy
+    description: Pharmacy record management
+  - name: Analytics
+    description: Analytics and reporting
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from login or register
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: User ID
+          example: "507f1f77bcf86cd799439011"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "John Doe"
+
+    UserWithTimestamp:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "John Doe"
+        createdAt:
+          type: string
+          format: date-time
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login successful"
+        accessToken:
+          type: string
+          description: JWT access token (valid for 15 minutes)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          description: Refresh token (valid for 7 days)
+          example: "a1b2c3d4e5f6..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    TokenRefreshResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "a1b2c3d4e5f6..."
+
+    Person:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        pan:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: "John Doe"
+        nameNepali:
+          type: string
+          example: "जोन डो"
+        position:
+          type: string
+          example: "Manager"
+        positionNepali:
+          type: string
+          example: "व्यवस्थापक"
+        department:
+          type: string
+          example: "HR"
+        departmentNepali:
+          type: string
+          example: "मानव संसाधन"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DutyDays:
+      type: object
+      properties:
+        month1:
+          type: number
+          example: 30
+        month2:
+          type: number
+          example: 29
+        month3:
+          type: number
+          example: 30
+        total:
+          type: number
+          example: 89
+
+    SalaryRecord:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439012"
+        pan:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: "John Doe"
+        nameNepali:
+          type: string
+          example: "जोन डो"
+        position:
+          type: string
+          example: "Manager"
+        positionNepali:
+          type: string
+          example: "व्यवस्थापक"
+        department:
+          type: string
+          example: "HR"
+        departmentNepali:
+          type: string
+          example: "मानव संसाधन"
+        accountNumber:
+          type: string
+          example: "1234567890123"
+        dutyDays:
+          $ref: '#/components/schemas/DutyDays'
+        rate:
+          type: number
+          example: 500
+        grossAmount:
+          type: number
+          example: 45000
+        taxDeduction:
+          type: number
+          example: 5000
+        otherDeductions:
+          type: number
+          example: 0
+        netSalary:
+          type: number
+          example: 40000
+        currency:
+          type: string
+          default: NPR
+          example: "NPR"
+        uploadedAt:
+          type: string
+          format: date-time
+
+    PharmacyRecord:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439013"
+        pan:
+          type: string
+          example: "123456789"
+        name:
+          type: string
+          example: "Pharmacist Name"
+        position:
+          type: string
+          example: "Senior Pharmacist"
+        nightDutyCount:
+          type: number
+          example: 5
+        rate:
+          type: number
+          example: 600
+        grossAmount:
+          type: number
+          example: 15000
+        taxDeduction:
+          type: number
+          example: 1500
+        netPayable:
+          type: number
+          example: 13500
+        accountNumber:
+          type: string
+          example: "1234567890123"
+        source:
+          type: string
+          example: "pharmacy_data.xlsx"
+        uploadedAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 50
+        total:
+          type: integer
+          example: 100
+        pages:
+          type: integer
+          example: 2
+
+    SalaryTotals:
+      type: object
+      properties:
+        totalGross:
+          type: number
+          example: 500000
+        totalNet:
+          type: number
+          example: 450000
+        totalTax:
+          type: number
+          example: 50000
+
+    UploadFileResult:
+      type: object
+      properties:
+        filename:
+          type: string
+          example: "salary_data.xlsx"
+        rowsRead:
+          type: integer
+          example: 250
+        inserted:
+          type: integer
+          example: 225
+        skipped:
+          type: integer
+          example: 25
+        errors:
+          type: array
+          items:
+            type: string
+          example: ["Row 5: Invalid PAN"]
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message description"
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operation successful"
+
+paths:
+  /:
+    get:
+      tags:
+        - Health
+      summary: API status check
+      description: Returns basic API status information
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Hospital Backend API"
+                  status:
+                    type: string
+                    example: "ok"
+
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Docker/Kubernetes health check with database connection status
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    description: Server uptime in seconds
+                    example: 3600
+                  database:
+                    type: string
+                    example: "connected"
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  database:
+                    type: string
+                    example: "disconnected"
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account and returns authentication tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "password123"
+                name:
+                  type: string
+                  example: "John Doe"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing_fields:
+                  value:
+                    error: "Email and password are required"
+                invalid_email:
+                  value:
+                    error: "Invalid email format"
+                weak_password:
+                  value:
+                    error: "Password must be at least 6 characters"
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Email already registered"
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticates user and returns access and refresh tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Email and password required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Invalid credentials"
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Uses refresh token to get new access and refresh tokens (token rotation)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: "a1b2c3d4e5f6..."
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponse'
+        '400':
+          description: Refresh token is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidates the provided refresh token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  example: "a1b2c3d4e5f6..."
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: "Logged out successfully"
+
+  /api/auth/logout-all:
+    post:
+      tags:
+        - Authentication
+      summary: Logout from all devices
+      description: Invalidates all refresh tokens for the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out from all devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: "Logged out from all devices successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/users:
+    get:
+      tags:
+        - Authentication
+      summary: Get all users
+      description: Returns a list of all registered users (without passwords)
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserWithTimestamp'
+
+  /api/upload:
+    post:
+      tags:
+        - Upload
+      summary: Upload salary data files
+      description: |
+        Upload Excel or CSV files containing salary data. Supports:
+        - Multiple files (max 10 files, 25MB each)
+        - Excel (.xlsx, .xls) and CSV formats
+        - Nepali language (Preeti font to Unicode conversion)
+        - Flexible column header mapping
+        - Deduplication via row hashing
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Excel or CSV files to upload
+      responses:
+        '200':
+          description: Files processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filesProcessed:
+                    type: integer
+                    example: 2
+                  totalRowsRead:
+                    type: integer
+                    example: 500
+                  totalInserted:
+                    type: integer
+                    example: 450
+                  totalSkipped:
+                    type: integer
+                    example: 50
+                  files:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UploadFileResult'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/search:
+    get:
+      tags:
+        - Person
+      summary: Search persons (autocomplete)
+      description: Autocomplete search by PAN or name
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query (minimum 2 characters)
+          schema:
+            type: string
+            minLength: 2
+            example: "john"
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 10
+            example: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                        pan:
+                          type: string
+                        name:
+                          type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/list:
+    get:
+      tags:
+        - Person
+      summary: List all persons
+      description: Get paginated list of all persons
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          description: Search by PAN or name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of persons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  persons:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Person'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/salary-records:
+    get:
+      tags:
+        - Person
+      summary: List all salary records
+      description: Get paginated list of all salary records with totals
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page
+          schema:
+            type: integer
+            default: 50
+        - name: search
+          in: query
+          description: Search by PAN, name, or account number
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of salary records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SalaryRecord'
+                  totals:
+                    $ref: '#/components/schemas/SalaryTotals'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/{pan}:
+    get:
+      tags:
+        - Person
+      summary: Get person by PAN
+      description: Get person details and their salary records
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pan
+          in: path
+          required: true
+          description: PAN number (9 digits) or account number (13-17 digits)
+          schema:
+            type: string
+            example: "123456789"
+        - name: page
+          in: query
+          description: Page number for salary records
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page
+          schema:
+            type: integer
+            default: 20
+        - name: from
+          in: query
+          description: Start date filter (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: End date filter (ISO format)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Person with salary records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  person:
+                    $ref: '#/components/schemas/Person'
+                  salaryRecords:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SalaryRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Person not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/{pan}/summary:
+    get:
+      tags:
+        - Person
+      summary: Get person salary summary
+      description: Get aggregated salary statistics for a person
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pan
+          in: path
+          required: true
+          description: PAN number or account number
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        '200':
+          description: Person salary summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  person:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                      pan:
+                        type: string
+                      name:
+                        type: string
+                  summary:
+                    type: object
+                    properties:
+                      totalRecords:
+                        type: integer
+                        example: 50
+                      totalEarnings:
+                        type: number
+                        example: 2000000
+                      averageSalary:
+                        type: number
+                        example: 40000
+                      latestSalary:
+                        type: object
+                        properties:
+                          amount:
+                            type: number
+                          grossAmount:
+                            type: number
+                          taxDeduction:
+                            type: number
+                          currency:
+                            type: string
+                          department:
+                            type: string
+                          position:
+                            type: string
+                          uploadedAt:
+                            type: string
+                            format: date-time
+                      firstSalary:
+                        type: object
+                        properties:
+                          amount:
+                            type: number
+                          grossAmount:
+                            type: number
+                          currency:
+                            type: string
+                          department:
+                            type: string
+                          uploadedAt:
+                            type: string
+                            format: date-time
+                      percentChange:
+                        type: number
+                        description: Percentage change from first to latest salary
+                        example: 20.0
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Person not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/person/{pan}/export:
+    get:
+      tags:
+        - Person
+      summary: Export person salary data
+      description: Export person's salary records in various formats
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pan
+          in: path
+          required: true
+          description: PAN number or account number
+          schema:
+            type: string
+            example: "123456789"
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: [json, csv, excel]
+            default: json
+      responses:
+        '200':
+          description: Exported data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  person:
+                    $ref: '#/components/schemas/Person'
+                  salaryRecords:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SalaryRecord'
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Person not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pharmacy/upload:
+    post:
+      tags:
+        - Pharmacy
+      summary: Upload pharmacy salary data
+      description: Upload Excel files containing pharmacy salary data
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Excel files to upload (max 10 files)
+      responses:
+        '200':
+          description: Files processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  filesProcessed:
+                    type: integer
+                    example: 1
+                  totalRowsRead:
+                    type: integer
+                    example: 100
+                  totalInserted:
+                    type: integer
+                    example: 95
+                  totalUpdated:
+                    type: integer
+                    example: 5
+                  totalSkipped:
+                    type: integer
+                    example: 0
+                  files:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filename:
+                          type: string
+                        rowsRead:
+                          type: integer
+                        inserted:
+                          type: integer
+                        updated:
+                          type: integer
+                        skipped:
+                          type: integer
+                        errors:
+                          type: array
+                          items:
+                            type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pharmacy:
+    get:
+      tags:
+        - Pharmacy
+      summary: List pharmacy records
+      description: Get paginated list of pharmacy records with totals
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Results per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of pharmacy records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PharmacyRecord'
+                  totals:
+                    $ref: '#/components/schemas/SalaryTotals'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/pharmacy/{pan}:
+    get:
+      tags:
+        - Pharmacy
+      summary: Get pharmacy record by PAN
+      description: Get a single pharmacy record by PAN number
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pan
+          in: path
+          required: true
+          description: PAN number
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        '200':
+          description: Pharmacy record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PharmacyRecord'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Pharmacy
+      summary: Delete pharmacy record
+      description: Delete a pharmacy record by PAN number
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pan
+          in: path
+          required: true
+          description: PAN number
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        '200':
+          description: Record deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: "Record deleted successfully"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/dashboard:
+    get:
+      tags:
+        - Analytics
+      summary: Dashboard overview
+      description: Get dashboard statistics overview
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalEmployees:
+                    type: integer
+                    example: 500
+                  totalRecords:
+                    type: integer
+                    example: 5000
+                  totalPaid:
+                    type: number
+                    example: 50000000
+                  averageSalary:
+                    type: number
+                    example: 10000
+                  minSalary:
+                    type: number
+                    example: 5000
+                  maxSalary:
+                    type: number
+                    example: 150000
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/departments:
+    get:
+      tags:
+        - Analytics
+      summary: List departments
+      description: Get list of all unique departments
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  departments:
+                    type: array
+                    items:
+                      type: string
+                    example: ["Finance", "HR", "IT", "Operations", "Sales"]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/departments/summary:
+    get:
+      tags:
+        - Analytics
+      summary: Department salary summary
+      description: Get department-wise salary statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          description: Start date filter (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: End date filter (ISO format)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Department summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  departments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        department:
+                          type: string
+                          example: "Finance"
+                        employeeCount:
+                          type: integer
+                          example: 50
+                        totalPaid:
+                          type: number
+                          example: 10000000
+                        avgSalary:
+                          type: number
+                          example: 200000
+                        recordCount:
+                          type: integer
+                          example: 500
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/reports/monthly:
+    get:
+      tags:
+        - Analytics
+      summary: Monthly salary report
+      description: Get month-by-month salary statistics for a year
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: year
+          in: query
+          description: Year (defaults to current year)
+          schema:
+            type: integer
+            example: 2024
+      responses:
+        '200':
+          description: Monthly report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  year:
+                    type: integer
+                    example: 2024
+                  months:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        month:
+                          type: integer
+                          minimum: 1
+                          maximum: 12
+                          example: 1
+                        employeeCount:
+                          type: integer
+                          example: 450
+                        totalPaid:
+                          type: number
+                          example: 4000000
+                        avgSalary:
+                          type: number
+                          example: 8888.89
+                        recordCount:
+                          type: integer
+                          example: 450
+                  yearTotal:
+                    type: number
+                    example: 50000000
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/reports/yearly:
+    get:
+      tags:
+        - Analytics
+      summary: Yearly salary report
+      description: Get year-over-year salary comparison
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Yearly report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  years:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        year:
+                          type: integer
+                          example: 2024
+                        employeeCount:
+                          type: integer
+                          example: 500
+                        totalPaid:
+                          type: number
+                          example: 50000000
+                        avgSalary:
+                          type: number
+                          example: 100000
+                        recordCount:
+                          type: integer
+                          example: 5000
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/reports/top-earners:
+    get:
+      tags:
+        - Analytics
+      summary: Top earners report
+      description: Get list of top earning employees
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Number of top earners to return
+          schema:
+            type: integer
+            default: 10
+        - name: department
+          in: query
+          description: Filter by department
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Top earners list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  topEarners:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pan:
+                          type: string
+                          example: "123456789"
+                        name:
+                          type: string
+                          example: "John Executive"
+                        totalEarnings:
+                          type: number
+                          example: 5000000
+                        avgSalary:
+                          type: number
+                          example: 416666.67
+                        recordCount:
+                          type: integer
+                          example: 12
+                        department:
+                          type: string
+                          example: "Finance"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/analytics/reports/export:
+    get:
+      tags:
+        - Analytics
+      summary: Export analytics report
+      description: Export department or monthly reports as Excel or PDF
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Report type
+          schema:
+            type: string
+            enum: [department, monthly]
+            default: department
+        - name: format
+          in: query
+          description: Export format
+          schema:
+            type: string
+            enum: [excel, pdf]
+            default: excel
+        - name: year
+          in: query
+          description: Year for monthly reports
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Exported file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

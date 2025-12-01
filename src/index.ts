@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 
 import authRoutes from './routes/auth';
 import uploadRoutes from './routes/upload';
@@ -11,6 +14,9 @@ import pharmacyRoutes from './routes/pharmacy';
 
 dotenv.config();
 
+// Load Swagger document
+const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hospital';
@@ -19,9 +25,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/hospit
 app.use(cors());
 app.use(express.json());
 
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Hospital API Documentation'
+}));
+
 // Routes
 app.get('/', (_req, res) => {
-  res.json({ message: 'Hospital Backend API', status: 'ok' });
+  res.json({ message: 'Hospital Backend API', status: 'ok', docs: '/api-docs' });
 });
 
 // Health check endpoint for Docker/Kubernetes
@@ -65,18 +77,20 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: err.message || 'Something went wrong' });
 });
 
-// Database connection and server start
+// Start server first, then connect to database
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`API docs available at http://localhost:${PORT}/api-docs`);
+});
+
+// Database connection (non-blocking)
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);
-    process.exit(1);
   });
 
 export default app;
