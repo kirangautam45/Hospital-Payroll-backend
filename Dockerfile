@@ -1,7 +1,7 @@
 # ================================
 # Stage 1: Build
 # ================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Install build dependencies for native modules (bcrypt)
 RUN apk add --no-cache python3 make g++
@@ -28,7 +28,7 @@ RUN npm prune --production
 # ================================
 # Stage 2: Production
 # ================================
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 # Install runtime dependencies for bcrypt
 RUN apk add --no-cache libstdc++

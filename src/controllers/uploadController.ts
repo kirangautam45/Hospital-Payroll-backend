@@ -59,7 +59,7 @@ interface ColumnMapping {
 // Includes various Nepali month names in Preeti encoding
 const COLUMN_PATTERNS = {
   // PAN patterns - Note: 'kfg' in Preeti = 'पान' (PAN), 'g+=' or 'g+' = 'नं' (number)
-  pan: ['pan', 'पान', 'kfg', 'kfg g', 'kfg g+', 'kfg g+=', 'kfgg', 'pan no', 'panno', 'pan number', 'पान नं', 'kfg g++=', 'kfgg+', 'kfgg+='],
+  pan: ['pan', 'पान', 'kfg', 'kfg g', 'kfg g+', 'kfg g+=', 'kfgg', 'pan no', 'panno', 'pan number', 'पान नं', 'पान नं.', 'kfg g++=', 'kfgg+', 'kfgg+='],
   name: ['name', 'gfdy', 'gfdy/', 'नाम', 'employee', 'sd{rf/L', 'कर्मचारी'],
   position: ['position', 'kb', 'पद', 'designation', 'post'],
   department: ['department', 'dept', 'ward', 'sfo', 'sfo/t', 'sfo{/t', 'ljefu', 'विभाग', 'sfo{/t ljefu', 's}lkmot'],
@@ -73,7 +73,7 @@ const COLUMN_PATTERNS = {
   rate: ['b/', 'दर', 'rate', 'per day', 'daily'],
   gross: ['kfpg] /sd', '/sd', 'पाउने रकम', 'gross', 'amount', 'रकम'],
   tax: ['kfl/>lds', 'kfl/>lds s/', 'कर', 'tax', 'tds', 'deduction'],
-  netSalary: ['s\'n kfpg]', 's\'n', 'कुल पाउने', 'net', 'net salary', 'कुल तलब']
+  netSalary: ['s\'n kfpg]', 's\'n kfpg]', 's\'n', 'कुल पाउने', 'net', 'net salary', 'कुल तलब']
 };
 
 export const uploadFiles = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -568,18 +568,46 @@ function getCellValue(row: ExcelJS.Row, colIndex: number | undefined): string {
   if (!cell.value) return '';
   if (cell.value instanceof Date) return cell.value.toISOString();
 
-  // Handle formula cells
+  // Handle formula cells and complex objects
   if (typeof cell.value === 'object' && cell.value !== null) {
-    const cellObj = cell.value as { result?: unknown; text?: string; richText?: Array<{ text: string }> };
-    if ('result' in cellObj && cellObj.result !== undefined) {
+    const cellObj = cell.value as {
+      result?: unknown;
+      text?: string;
+      richText?: Array<{ text: string }>;
+      formula?: string;
+      sharedFormula?: string;
+    };
+
+    // Check for formula result first
+    if ('result' in cellObj && cellObj.result !== undefined && cellObj.result !== null) {
+      // Handle nested object results (formula returning error or object)
+      if (typeof cellObj.result === 'object') {
+        return '';
+      }
       return String(cellObj.result);
     }
+
+    // Handle rich text
     if ('richText' in cellObj && Array.isArray(cellObj.richText)) {
       return cellObj.richText.map(rt => rt.text).join('');
     }
+
+    // Handle hyperlink text
     if ('text' in cellObj && cellObj.text) {
       return cellObj.text;
     }
+
+    // If it's a formula without result, return empty
+    if ('formula' in cellObj || 'sharedFormula' in cellObj) {
+      return '';
+    }
+
+    // Fallback - avoid [object Object]
+    const str = cell.value.toString();
+    if (str === '[object Object]') {
+      return '';
+    }
+    return str.trim();
   }
 
   return cell.value.toString().trim();
