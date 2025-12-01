@@ -17,6 +17,7 @@ RUN npm ci
 # Copy source code
 COPY tsconfig.json ./
 COPY src ./src
+COPY swagger.yaml ./
 
 # Build TypeScript
 RUN npm run build
