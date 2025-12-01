@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import uploadRoutes from './routes/upload';
 import personRoutes from './routes/person';
 import analyticsRoutes from './routes/analytics';
+import pharmacyRoutes from './routes/pharmacy';
 
 dotenv.config();
 
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/person', personRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/pharmacy', pharmacyRoutes);
 
 // Error handler
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

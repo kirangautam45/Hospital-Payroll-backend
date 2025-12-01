@@ -472,38 +472,48 @@ async function processWorksheet(
 async function insertRows(rows: ParsedRow[], filename: string, result: UploadResult): Promise<void> {
   if (rows.length === 0) return;
 
-  console.log(`\n=== INSERTING ${rows.length} ROWS TO DATABASE ===`);
+  console.log(`\n=== UPSERTING ${rows.length} ROWS TO DATABASE ===`);
 
   const bulkOps = rows.map((row) => ({
-    insertOne: {
-      document: {
-        pan: row.pan,
-        name: row.name,
-        nameNepali: row.nameNepali,
-        position: row.position,
-        positionNepali: row.positionNepali,
-        department: row.department,
-        departmentNepali: row.departmentNepali,
-        accountNumber: row.accountNumber,
-        dutyDays: row.dutyDays,
-        rate: row.rate,
-        grossAmount: row.grossAmount,
-        taxDeduction: row.taxDeduction,
-        netSalary: row.netSalary,
-        rowHash: row.rowHash,
-        source: filename,
-        uploadedAt: new Date()
-      }
+    updateOne: {
+      filter: { pan: row.pan },
+      update: {
+        $set: {
+          // Always update these fields on duplicate
+          dutyDays: row.dutyDays,
+          rate: row.rate,
+          grossAmount: row.grossAmount,
+          taxDeduction: row.taxDeduction,
+          netSalary: row.netSalary,
+          rowHash: row.rowHash,
+          source: filename,
+          uploadedAt: new Date()
+        },
+        $setOnInsert: {
+          // Only set these on new insert
+          pan: row.pan,
+          name: row.name,
+          nameNepali: row.nameNepali,
+          position: row.position,
+          positionNepali: row.positionNepali,
+          department: row.department,
+          departmentNepali: row.departmentNepali,
+          accountNumber: row.accountNumber
+        }
+      },
+      upsert: true
     }
   }));
 
   try {
     const bulkResult = await SalaryRecord.bulkWrite(bulkOps, { ordered: false });
-    result.inserted = bulkResult.insertedCount;
-    result.skipped += rows.length - bulkResult.insertedCount;
+    result.inserted = bulkResult.upsertedCount;
+    const updated = bulkResult.modifiedCount;
+    result.skipped = rows.length - result.inserted - updated;
+    console.log(`New records: ${result.inserted}, Updated: ${updated}`);
   } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'insertedCount' in err) {
-      result.inserted = (err as { insertedCount: number }).insertedCount;
+    if (err && typeof err === 'object' && 'upsertedCount' in err) {
+      result.inserted = (err as { upsertedCount: number }).upsertedCount;
     }
     result.skipped += rows.length - result.inserted;
   }
