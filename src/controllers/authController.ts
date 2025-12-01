@@ -196,3 +196,13 @@ export const logoutAll = async (req: AuthRequest, res: Response): Promise<void> 
     res.status(500).json({ error: 'Logout failed' });
   }
 };
+
+export const getAllUsers = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+};
